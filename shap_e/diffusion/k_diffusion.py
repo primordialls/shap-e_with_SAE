@@ -123,6 +123,7 @@ def karras_sample_progressive(
     clip_denoised=True,
     progress=False,
     model_kwargs=None,
+    noise=None,
     device=None,
     sigma_min=0.002,
     sigma_max=80,  # higher for highres?
@@ -135,7 +136,7 @@ def karras_sample_progressive(
     guidance_scale=0.0,
 ):
     sigmas = get_sigmas_karras(steps, sigma_min, sigma_max, rho, device=device)
-    x_T = th.randn(*shape, device=device) * sigma_max
+    x_T = th.randn(*shape, device=device) * sigma_max if noise is None else noise
 
     #put it here
 

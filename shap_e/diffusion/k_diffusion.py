@@ -138,8 +138,6 @@ def karras_sample_progressive(
     sigmas = get_sigmas_karras(steps, sigma_min, sigma_max, rho, device=device)
     x_T = (th.randn(*shape, device=device) if noise is None else noise) * sigma_max
 
-    #put it here
-
     sample_fn = {"heun": sample_heun, "dpm": sample_dpm, "ancestral": sample_euler_ancestral}[
         sampler
     ]

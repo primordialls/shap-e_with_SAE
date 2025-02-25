@@ -136,7 +136,7 @@ def karras_sample_progressive(
     guidance_scale=0.0,
 ):
     sigmas = get_sigmas_karras(steps, sigma_min, sigma_max, rho, device=device)
-    x_T = th.randn(*shape, device=device) * sigma_max if noise is None else noise
+    x_T = (th.randn(*shape, device=device) if noise is None else noise) * sigma_max
 
     #put it here
 

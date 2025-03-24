@@ -3,3 +3,5 @@ __pycache__/
 *.egg-info/
 .venv
 shap_e_model_cache
+trout/
+*.pt

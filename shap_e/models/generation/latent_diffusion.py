@@ -15,10 +15,10 @@ class SplitVectorDiffusion(nn.Module):
         if hasattr(self.wrapped, "cached_model_kwargs"):
             self.cached_model_kwargs = self.wrapped.cached_model_kwargs
 
-    def forward(self, x: torch.Tensor, t: torch.Tensor, **kwargs):
+    def forward(self, x: torch.Tensor, bruh: int, t: torch.Tensor, **kwargs):
         h = x.reshape(x.shape[0], self.n_ctx, -1).permute(0, 2, 1)
         pre_channels = h.shape[1]
-        h = self.wrapped(h, t, **kwargs)
+        h = self.wrapped(h, bruh, t, **kwargs)
         assert (
             h.shape[1] == pre_channels * 2
         ), "expected twice as many outputs for variance prediction"

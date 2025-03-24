@@ -303,7 +303,7 @@ class GaussianDiffusion:
         return posterior_mean, posterior_variance, posterior_log_variance_clipped
 
     def p_mean_variance(
-        self, model, x, t, clip_denoised=False, denoised_fn=None, model_kwargs=None
+        self, model, x, bruh, t, clip_denoised=False, denoised_fn=None, model_kwargs=None
     ):
         """
         Apply the model to get p(x_{t-1} | x_t), as well as a prediction of
@@ -330,7 +330,7 @@ class GaussianDiffusion:
 
         B, C = x.shape[:2]
         assert t.shape == (B,)
-        model_output = model(x, t, **model_kwargs)
+        model_output = model(x, bruh, t, **model_kwargs)
         if isinstance(model_output, tuple):
             model_output, extra = model_output
         else:

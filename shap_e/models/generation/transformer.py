@@ -8,6 +8,7 @@ from shap_e.models.nn.checkpoint import checkpoint
 
 from .pretrained_clip import FrozenImageCLIP, ImageCLIP, ImageType
 from .util import timestep_embedding
+import os
 
 
 def init_linear(l, stddev):
@@ -105,10 +106,10 @@ class ResidualAttentionBlock(nn.Module):
         self.mlp = MLP(device=device, dtype=dtype, width=width, init_scale=init_scale)
         self.ln_2 = nn.LayerNorm(width, device=device, dtype=dtype)
 
-    def forward(self, x: torch.Tensor):
+    def forward(self, x: torch.Tensor, bruh: int = 0):
         x = x + self.attn(self.ln_1(x))
         x = x + self.mlp(self.ln_2(x))
-        return x
+        return x, bruh
 
 
 class Transformer(nn.Module):
@@ -142,9 +143,23 @@ class Transformer(nn.Module):
             ]
         )
 
-    def forward(self, x: torch.Tensor):
+    def forward(self, x: torch.Tensor, bruh: int):
+        fireindex = 16
         for block in self.resblocks:
-            x = block(x)
+            x, _ = block(x, bruh)
+
+
+        # if bruh != fireindex and bruh != -(fireindex+1):
+        #     return x
+        # n = 0
+        # if bruh >= 0:
+        #     while os.path.exists(f"trout/saved_x_second_{n}.pt"):
+        #         n += 1
+        #     torch.save(x, f"trout/saved_x_second_{n}.pt")
+        # else:
+        #     while os.path.exists(f"trout/saved_x_first_{n}.pt"):
+        #         n += 1
+        #     torch.save(x, f"trout/saved_x_first_{n}.pt")
         return x
 
 
@@ -211,7 +226,7 @@ class PointDiffusionTransformer(nn.Module):
         return self._forward_with_cond(x, [(t_embed, self.time_token_cond)])
 
     def _forward_with_cond(
-        self, x: torch.Tensor, cond_as_token: List[Tuple[torch.Tensor, bool]]
+        self, x: torch.Tensor, bruh: int, cond_as_token: List[Tuple[torch.Tensor, bool]]
     ) -> torch.Tensor:
         h = self.input_proj(x.permute(0, 2, 1))  # NCL -> NLC
         for emb, as_token in cond_as_token:
@@ -228,7 +243,7 @@ class PointDiffusionTransformer(nn.Module):
             h = torch.cat(extra_tokens + [h], dim=1)
 
         h = self.ln_pre(h)
-        h = self.backbone(h)
+        h = self.backbone(h, bruh)
         h = self.ln_post(h)
         if len(extra_tokens):
             h = h[:, sum(h.shape[1] for h in extra_tokens) :]
@@ -266,6 +281,7 @@ class CLIPImagePointDiffusionTransformer(PointDiffusionTransformer):
     def forward(
         self,
         x: torch.Tensor,
+        bruh: int,
         t: torch.Tensor,
         images: Optional[Iterable[Optional[ImageType]]] = None,
         texts: Optional[Iterable[Optional[str]]] = None,
@@ -295,7 +311,7 @@ class CLIPImagePointDiffusionTransformer(PointDiffusionTransformer):
         clip_embed = self.clip_embed(clip_out)
 
         cond = [(clip_embed, self.token_cond), (t_embed, self.time_token_cond)]
-        return self._forward_with_cond(x, cond)
+        return self._forward_with_cond(x, bruh, cond)
 
 
 class CLIPImageGridPointDiffusionTransformer(PointDiffusionTransformer):

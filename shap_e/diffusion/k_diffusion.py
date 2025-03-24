@@ -95,7 +95,7 @@ class GaussianToKarrasDenoiser:
         else:
             return float(self.alpha_cumprod_to_t(alpha_cumprod))
 
-    def denoise(self, x_t, sigmas, clip_denoised=True, model_kwargs=None):
+    def denoise(self, x_t, bruh, sigmas, clip_denoised=True, model_kwargs=None):
         t = th.tensor(
             [self.sigma_to_t(sigma) for sigma in sigmas.cpu().numpy()],
             dtype=th.long,
@@ -103,7 +103,7 @@ class GaussianToKarrasDenoiser:
         )
         c_in = append_dims(1.0 / (sigmas**2 + 1) ** 0.5, x_t.ndim)
         out = self.diffusion.p_mean_variance(
-            self.model, x_t * c_in, t, clip_denoised=clip_denoised, model_kwargs=model_kwargs
+            self.model, x_t * c_in, bruh, t, clip_denoised=clip_denoised, model_kwargs=model_kwargs
         )
         return None, out["pred_xstart"]
 
@@ -136,6 +136,7 @@ def karras_sample_progressive(
     guidance_scale=0.0,
 ):
     sigmas = get_sigmas_karras(steps, sigma_min, sigma_max, rho, device=device)
+    noise = th.load("sae/noise.pt").to(device)
     x_T = (th.randn(*shape, device=device) if noise is None else noise) * sigma_max
 
     sample_fn = {"heun": sample_heun, "dpm": sample_dpm, "ancestral": sample_euler_ancestral}[
@@ -158,9 +159,9 @@ def karras_sample_progressive(
     elif isinstance(diffusion, GaussianDiffusion):
         model = GaussianToKarrasDenoiser(model, diffusion)
 
-        def denoiser(x_t, sigma):
+        def denoiser(x_t, bruh, sigma):
             _, denoised = model.denoise(
-                x_t, sigma, clip_denoised=clip_denoised, model_kwargs=model_kwargs
+                x_t, bruh, sigma, clip_denoised=clip_denoised, model_kwargs=model_kwargs
             )
             return denoised
 
@@ -169,10 +170,10 @@ def karras_sample_progressive(
 
     if guidance_scale != 0 and guidance_scale != 1:
 
-        def guided_denoiser(x_t, sigma):
+        def guided_denoiser(x_t, bruh, sigma):
             x_t = th.cat([x_t, x_t], dim=0)
             sigma = th.cat([sigma, sigma], dim=0)
-            x_0 = denoiser(x_t, sigma)
+            x_0 = denoiser(x_t, bruh, sigma)
             cond_x_0, uncond_x_0 = th.split(x_0, len(x_0) // 2, dim=0)
             x_0 = uncond_x_0 + guidance_scale * (cond_x_0 - uncond_x_0)
             return x_0
@@ -264,7 +265,7 @@ def sample_heun(
         sigma_hat = sigmas[i] * (gamma + 1)
         if gamma > 0:
             x = x + eps * (sigma_hat**2 - sigmas[i] ** 2) ** 0.5
-        denoised = denoiser(x, sigma_hat * s_in)
+        denoised = denoiser(x, -(i+1), sigma_hat * s_in)
         d = to_d(x, sigma_hat, denoised)
         yield {"x": x, "i": i, "sigma": sigmas[i], "sigma_hat": sigma_hat, "pred_xstart": denoised}
         dt = sigmas[i + 1] - sigma_hat
@@ -274,7 +275,7 @@ def sample_heun(
         else:
             # Heun's method
             x_2 = x + d * dt
-            denoised_2 = denoiser(x_2, sigmas[i + 1] * s_in)
+            denoised_2 = denoiser(x_2, i, sigmas[i + 1] * s_in)
             d_2 = to_d(x_2, sigmas[i + 1], denoised_2)
             d_prime = (d + d_2) / 2
             x = x + d_prime * dt

@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from tqdm import tqdm
 
 class SAE(nn.Module):
     def __init__(self, input_dim: int, hidden_dims: list, latent_dim: int):

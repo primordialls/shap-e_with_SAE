@@ -16,29 +16,41 @@ body {
     color: #333;
 }
 
+hr {
+    border: 0;
+    border-top: 1px solid #ccc;
+    margin: 2rem 0;
+}
+
 h1 {
     font-size: 2.5rem;
     margin-bottom: 1rem;
+    margin-left: 1%;
 }
 h2 {
     font-size: 2rem;
     margin-bottom: 0.75rem;
+    margin-left: 1%;
 }
 h3 {
+    margin-top: 1.5rem;
     font-size: 1.75rem;
     margin-bottom: 0.5rem;
+    margin-left: 2%;
 }
 
 .image {
     display: block;
-    max-width: 100%;
     height: auto;
-    margin: 0 auto;
-    border-radius: 8px; /* Optional: Add rounded corners to images */
+    /* margin: 0 auto; */
+    border-radius: 8px;
+    margin-left: 2%;
+    max-width: 96%;
 }
 
 /* Optional: Remove default link styles */
 a {
     text-decoration: none;
     color: inherit;
+    padding: 1.5rem ;
 }
